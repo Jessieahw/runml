@@ -13,17 +13,24 @@ fi
 echo "Compilation successful."
 
 # Loop through sample01.ml to sample08.ml and run the compiled program
-for i in {1..8}
+for i in {1..9}
 do
     # Format the sample file name
     sample_file=$(printf "sample0%d.ml" $i)
 
     # Check if the sample file exists
     if [ -f "$sample_file" ]; then
-        echo "Running ./runml $sample_file"
+        echo "Running ./runml $sample_file 1 2"
         ./runml "$sample_file"
         echo ""
     else
         echo "File $sample_file not found, skipping..."
     fi
 done
+if [ -f "sample10.ml" ]; then
+    echo "Running ./runml sample10.ml 1 2"
+    ./runml "sample10.ml"
+    echo ""
+else
+    echo "File sample10.ml not found, skipping..."
+fi
