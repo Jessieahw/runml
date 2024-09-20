@@ -13,8 +13,36 @@ int identifierCount = 0;
 // int functionCounts =0;
 char identifiers[100][100];
 
-char records[50][50];  
+char records[50][50];
+char records_count[50];
 int count = 0;  
+
+typedef struct {
+    char name[50];
+    int paramCount;  // Number of parameters
+} FunctionRecord;
+
+// FunctionRecord funcRecord[50];  // Example records array
+// int getExpectedParamCount(const char *functionName, FunctionRecord *funcRecord, int recordCount) {
+//     for (int i = 0; i < recordCount; i++) {
+//         if (strcmp(funcRecord[i].name, functionName) == 0) {
+//             return funcRecord[i].paramCount;  // Return the expected parameter count
+//         }
+//     }
+//     return -1;  // Not found
+// }
+
+
+int getExpectedParamCount(const char *functionName, int recordCount){
+    for (int i = 0;i< recordCount;i++){
+        if (strcmp(records[i],functionName) == 0){
+            return records_count[i];
+        }
+    }
+    return -1;
+}
+
+
 
 
 
@@ -27,6 +55,8 @@ bool existVariable(const char *varName, char identifier[100][100], int size) {
     }
     return false;
 }
+
+
 
 bool existFunction(const char *varName, char record[50][50], int size) {
     for (int i = 0; i < size; i++) {
@@ -123,6 +153,10 @@ void checkLine(char *line)
           strcpy(identifiers[identifierCount++],varName);
         //   identifiers[identifierCount][strlen(varName)]='\0';
         //   identifierCount++;
+        if(identifierCount>50){
+            fprintf(stderr, "! Error: the number of identifiers exceed 50\n");
+            exit(EXIT_FAILURE);
+        }
 
         }
      }
@@ -327,9 +361,6 @@ fprintf(newFile,"#include <stdio.h>\n");
 fprintf(newFile,"#include <math.h>\n");
 
 fprintf(newFile,"\n");
-
-// fprintf(newFile,"void custom_print(double value) { double int_part, frac_part; frac_part = modf(value, &int_part);if (frac_part == 0.0) {printf("%.0f\n", value);} else {printf("%.6f\n", value); } }")
-
     fprintf(newFile, "void custom_print(double value) {\n");
     fprintf(newFile, "    double int_part, frac_part;\n");
     fprintf(newFile, "    frac_part = modf(value, &int_part);\n");
@@ -357,7 +388,9 @@ fprintf(newFile,"\n");
             continue;
         }
         if (strstr(line,"function") != NULL){
+
             function_count++;
+
         }
 
     }
@@ -385,6 +418,8 @@ fprintf(newFile,"\n");
         }
 
         else if (strstr(line,"function") != NULL){
+            char parameter_names[100][100]; // Store parameter names
+            int param_count = 0;
 
             char linebuffer[10000];
 
@@ -421,7 +456,10 @@ fprintf(newFile,"\n");
  
                 if (function_index == 1){
 
-                    strcpy(records[count++], token);
+                    strcpy(records[count], token);
+                    // strcpy(records_count[count],token);
+                    // records_count[count] = 
+                    // count++;
                     strcat(linebuffer,token);
                     strcat(linebuffer," (");
                 }
@@ -433,7 +471,11 @@ fprintf(newFile,"\n");
 
                     //add to function itendifier
 
+                    records_count[count]++;
+
+
                     strcpy(function_identifier[local_count++],token);
+                    strcpy(parameter_names[param_count++], token);
                 }
 
                 if (function_index > 2){
@@ -441,23 +483,25 @@ fprintf(newFile,"\n");
                     strcat(linebuffer,",double ");
                     strcat(linebuffer,token);
 
+                    records_count[count]++;
+
+
+
                     strcpy(function_identifier[local_count++],token);
-
-                    //add to function idendifdiere
-
+                    strcpy(parameter_names[param_count++], token);
                 }
 
                 function_index++;
                 token = strtok(NULL, " "); 
             }
 
+            count++;
+
+        
             strcat(linebuffer,"){\n");
 
             long place = ftell(file);
-            // bool hasPrint= false;
              while (fgets(line, sizeof(line), file) != NULL) {
-
-               
 
                 if(line[0]=='#'){
                     continue;
@@ -466,9 +510,6 @@ fprintf(newFile,"\n");
                     fseek(file,place,SEEK_SET);
                     break;
                 }
-
-               
-
                 if (strstr(line,"print") != NULL){
                     
                    
@@ -478,6 +519,7 @@ fprintf(newFile,"\n");
                      char *token = strtok(line_copy2, " ");
                     // strcat(linebuffer,"printf(\"%lf\",");
                     strcat(linebuffer,"custom_print(");
+                    // int paren_coun /t = 0;
 
                      while (token != NULL) {
 
@@ -496,42 +538,25 @@ fprintf(newFile,"\n");
 
                          else if (isalpha(trimmed_token[0])){
 
-                             if (!existVariable(trimmed_token, function_identifier,100) || !existVariable(trimmed_token, identifiers,100))  {
-                                strcat(linebuffer,"0.0");
+                            //  if (!existVariable(trimmed_token, function_identifier,100) || !existVariable(trimmed_token, identifiers,100))  {
+                            //     strcat(linebuffer,"0.0");
+                            // }
+                            // else{
+                            //     strcat(linebuffer,trimmed_token);
+                                
+                            // }
+                            //aghh3:
+                            if(existVariable(trimmed_token, function_identifier,100) || existVariable(trimmed_token, identifiers,100)||existVariable(trimmed_token,parameter_names,100))  {
+                                strcat(linebuffer,trimmed_token);
                             }
                             else{
-                                strcat(linebuffer,trimmed_token);
+                                strcat(linebuffer,"0.0");
                                 
                             }
-
-                         }
+            }
                          else{
                             strcat(linebuffer,trimmed_token);
                          }
-
-                         
-
-                        //  for(int k = 0;k<50;k++){
-                        //     if (!existVariable(trimmed_token, function_identifier,100)) {
-                        //         strcat(linebuffer,"0.0");
-                        //     }
-                        //     else{
-                        //         strcat(linebuffer,trimmed_token);
-                                
-                        //     }
-                        //     break;
-                        //  }
-                         
-                        // if (strcmp(trimmed_token, "print") != 0) {
-                        //     if (!existVariable(trimmed_token, identifiers, identifierCount)) {
-                        //         // Variable does not exist, use 0.0
-                        //         strcat(linebuffer, "0.0");
-                        //     }
-                        //     else{
-                        //     strcat(linebuffer, trimmed_token);
-                        //     }
-                            // hasPrint=true;
-                        // }
                         token = strtok(NULL, " "); 
                     }
                     strcat(linebuffer,");\n");
@@ -544,8 +569,7 @@ fprintf(newFile,"\n");
 
                     token3=strtok_r(line,"<-",&saveptr3);
                     char *Newtoken3= skip_leading_whitespace(token3);//abc <-10, first token:abc_
-//  abc <-1
-//abc == " "
+
                     while(token3!=NULL && index==0){//abc <-10
                     if(strstr(Newtoken3," ") != NULL){
                         token4=strtok_r(Newtoken3," ",&saveptr4);//fisrt token:abc
@@ -564,7 +588,6 @@ fprintf(newFile,"\n");
                     index++;
                 }
 
-                    // snprintf(linebuffer,sizeof(linebuffer),"double ");
                     strcat(linebuffer,"double ");
                     int index = 0;
 
@@ -574,15 +597,10 @@ fprintf(newFile,"\n");
 
                             strcat(linebuffer,token);
                             strcat(linebuffer," = ");
-
-
-                    
                         }
 
                         if (index > 1){
                             strcat(linebuffer,token);
-                            
-                            
                         }
 
                         index++;
@@ -590,21 +608,13 @@ fprintf(newFile,"\n");
                     }
 
                     strcat(linebuffer,";\n");
-
                 }
 
                 else if(strstr(line,"return") != NULL){
                     hasReturn = true;
-
-                    //implement return
-
-                    // strcat(linebuffer,"return")
-
                     char *token = strtok(line," ");
-
+                    
                     while (token != NULL){
-
-
 
                         char *trimmed_token = skip_leading_whitespace(token);
 
@@ -613,7 +623,7 @@ fprintf(newFile,"\n");
                             trimmed_token[len - 1] = '\0';
 }
                         
-
+                         
                         if(strcmp(trimmed_token,"return") == 0){
                             strcat(linebuffer,"return ");
                              token = strtok(NULL," ");
@@ -623,24 +633,25 @@ fprintf(newFile,"\n");
 
                         else if (isalpha(trimmed_token[0])){
 
-                             if (!existVariable(trimmed_token, function_identifier, 50)) {
-                                strcat(linebuffer,"0.0");
+                            //  if (!existVariable(trimmed_token, function_identifier, 50)) {
+                            //     strcat(linebuffer,"0.0");
+                            // }
+                            // else{
+                            //     strcat(linebuffer,trimmed_token);
+                            // }
+                            //aghh3:
+                            if (existVariable(trimmed_token, parameter_names, param_count) ||
+                                existVariable(trimmed_token, identifiers, identifierCount)||
+                                existVariable(trimmed_token, function_identifier, 50)) {
+                                strcat(linebuffer, trimmed_token); // Use 0.0 if variable is not found
+                            } else {
+                                strcat(linebuffer, "0.0"); // Use the variable
                             }
-                            else{
-                                strcat(linebuffer,trimmed_token);
-                            }
-
                         }
 
                         else{
                             strcat(linebuffer,trimmed_token);
                         }
-
-                           
-                         
-
-
-                        // strcat(linebuffer,token);
                         strcat(linebuffer," ");
 
 
@@ -653,21 +664,9 @@ fprintf(newFile,"\n");
 
                 
             }
-
-            // if (hasReturn){
                 fprintf(newFile,"double ");
-            // }
-            // else{
-
-            //     fprintf(newFile," ");
-            // }
-
-            // if function doesnt have both print and return, return 0.0
            
             fprintf(newFile,"%s",linebuffer);
-            // if(!hasPrint&&!hasReturn){
-            //     fprintf(newFile,"return 0.0;");
-            // }
             if(!hasReturn){
                 fprintf(newFile,"return 0.0;");
             }
@@ -684,104 +683,40 @@ fprintf(newFile,"\n");
              strcpy(str,line);
 
              char *token = strtok(line, " ,()");
-
-             //a,ball(first)
-             //print hey(a,b)
-             //for(int i=0;i<strlen(token);i++){
-                //if(token[i]==","||token[i]==")"||token[i]=="("){
-                    //continue;
-                // }
-                // else{
-                    // do what ever normally
-                // }
-            //  }
-
-            //  fprintf(newFile,"printf(\"%%lf\",");
             fprintf(newFile,"custom_print(");
+            
 
-            //  int count = 0;
-
-           
-
-             int count_comma = 0;
+            int count_comma = 0;
     
- char *ptr = str;
- int count_function_call=0;
+            char *ptr = str;
+            while (*ptr != '\0') {
+                // printf("%c", *ptr);  // Print each character
+                if (*ptr == ','){
+                        count_comma++;
+                }
+                ptr++;  
 
-//  int *comma_index[50];
-//  int myindex = 0;
-
-    // Traverse the array using the pointer
-    while (*ptr != '\0') {
-        printf("%c", *ptr);  // Print each character
-        if (*ptr == ','){
-                   count_comma++;
-        }
-        ptr++;  // Move to the next character
- 
-
-        // if(ptr == '\t' || ptr == ' ' ){
-        //     continue;
-        // }
-        
-        // myindex++;
-
-
-
-
-
-    }
-
-                
-                // // Loop through each character of the string
-                // while (*str != '\0') {
-                //     if (*str == ',') {
-                //         count++;  // Increment the count when a comma is found
-                //     }
-                //     str++;  // Move to the next character
-                // }
-                
-
-            // bool isfunction = false;
+            }
             // int mycount = 0;
-            // bool start = false;
-
             int count_identifier = 0;
+            int functionDepth = 0;
+            int expectedParamCount = 0;
             while (token != NULL) {
 
-                if (strcmp(token,"print") != 0){        
 
-                    // for(int k = 0;k<50;k++){
-
-                    //     if(strcmp(records[k],token) == 0){
-                    //         fprintf(newFile,"%s",token);
-                    //         fprintf(newFile,"(");
-                    //         mycount++;
-                    //         // isfunction = true;
-
-                    //         break;
-                    //     }
-                    // }    
-
+                if (strcmp(token,"print") != 0){    
                     if(existFunction(token,records,50)){
+                        expectedParamCount = getExpectedParamCount(token,50);
+
+
+                        printf("%d\n",expectedParamCount);
                                   fprintf(newFile,"%s",token);
                             fprintf(newFile,"(");
                             // mycount++;
-                            count_function_call++;
-                            // start = true;
-                            // token = strtok(NULL, " ,()"); 
-
-                            // break;
+                            functionDepth++;
+                            count_identifier = 0;
                     }
-
-                    // if(!isfunction){
-                    //     isfunction = false;
-                    //     break;
-                    // }
-
-
-
-                 
+                    
 
                     else if  (isdigit(token[0])){
 
@@ -793,11 +728,7 @@ fprintf(newFile,"\n");
 
                         fprintf(newFile,"%s",token);
                         count_identifier++;
-
-                        
-
-
-
+                      
                     }
 
                     else if (!isalpha(token[0])){
@@ -824,41 +755,29 @@ fprintf(newFile,"\n");
                         }
                             fprintf(newFile,"%s",token);
                             count_identifier++;
+                            
                         }
-
-
-
-
-
-
-
-                    // if  (isalpha(token[0])){
-
-                    //  if (!existVariable(token,identifiers,50) ){
-                    //         fprintf(newFile,"%s","0.0");
-                    //     }
-                    //      else{
-                    //         fprintf(newFile,"%s",token);
-                    //     }
-                       
-                    // }
-
-                    //  else{
-                    //         fprintf(newFile,"%s",token);
-                    //     }
-     
+                }
+                 if (functionDepth > 0 && count_identifier >= expectedParamCount) {
+                    printf("%s",token);
+                    fprintf(newFile, ")");
+                    functionDepth--;
+                    count_identifier = 0;  // Reset for the next function
+                    expectedParamCount = 0; // Reset expected parameter count
                 }
                 token = strtok(NULL, " ,()"); 
+                
             }
-
-            // if(isfunction){
-            //     fprintf(newFile)
+            // modifie this
+            // for(int i = 0;i<mycount;i++){
+                // fprintf(newFile,")");
             // }
 
-            for(int i = 0;i<count_function_call;i++){
-                fprintf(newFile,")");
+            // aghh3:
+            while (functionDepth > 0) {
+                fprintf(newFile, ")");
+                functionDepth--;
             }
-            count_function_call=0;
             fprintf(newFile,");\n");
         }
         else if (strstr(line,"<-") != NULL){
@@ -892,10 +811,6 @@ fprintf(newFile,"\n");
 
             for(int i = 0;i < count; i++){
                 if(strstr(line,records[i])){
-
-
-
-                    //multiply() mul
 
                     if (strstr(line," ") == NULL){
                         fprintf(newFile,"%s",line);
@@ -935,11 +850,6 @@ fprintf(newFile,"\n");
 
         }
 
-
-
-      
-
-    
 }
 fprintf(newFile,"}\n");  
 fclose(file);
